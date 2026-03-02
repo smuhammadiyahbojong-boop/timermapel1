@@ -5,44 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ujian Online - Durasi 30 Menit</title>
     <style>
-        /* Desain Halaman */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; }
+        /* Desain Dasar */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; overflow-x: hidden; }
         
-        /* Header & Timer */
-        #header { position: fixed; top: 0; width: 100%; background: #ffffff; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
+        /* Header & Timer Tetap di Atas */
+        #header { position: fixed; top: 0; width: 100%; background: #ffffff; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; }
         #timer-container { font-size: 28px; color: #d93025; font-weight: bold; }
-        .warning { color: #5f6368; font-size: 14px; margin-top: 5px; font-style: italic; }
+        .warning { color: #5f6368; font-size: 13px; margin-top: 5px; font-weight: normal; }
         
-        /* Pengaturan Form */
-        iframe { width: 100%; height: 100vh; border: none; margin-top: 100px; }
+        /* Pengaturan Iframe Google Form */
+        iframe { width: 100%; height: calc(100vh - 100px); border: none; margin-top: 100px; }
         
-        /* Layar Penutup saat Waktu Habis */
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; text-align: center; padding-top: 20%; }
-        #overlay h1 { color: #d93025; font-size: 48px; }
-        #overlay p { font-size: 18px; color: #555; }
+        /* Layar Pemblokir (Waktu Habis / Refresh) */
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; text-align: center; padding-top: 15%; }
+        #overlay h1 { color: #d93025; font-size: 40px; margin-bottom: 10px; }
+        #overlay p { font-size: 18px; color: #555; line-height: 1.6; padding: 0 20px; }
+        .btn-home { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #1a73e8; color: white; text-decoration: none; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <div id="header">
     <div id="timer-container">Sisa Waktu: <span id="time">30:00</span></div>
-    <div class="warning">Peringatan: Jangan refresh halaman atau waktu akan terulang!</div>
+    <div class="warning">⚠️ DILARANG REFRESH HALAMAN INI SELAMA UJIAN BERLANGSUNG</div>
 </div>
 
 <div id="overlay">
-    <h1>WAKTU HABIS!</h1>
-    <p>Maaf, waktu pengerjaan 30 menit Anda telah berakhir.<br>Silakan hubungi pengawas jika ada kendala.</p>
+    <h1 id="status-title">WAKTU HABIS!</h1>
+    <p id="status-message">Maaf, sesi ujian Anda telah berakhir.<br>Jawaban yang sudah terkirim akan diproses oleh sistem.</p>
+    <a href="#" onclick="location.reload();" class="btn-home">Coba Masuk Kembali</a>
 </div>
 
 <iframe id="googleForm" src="https://docs.google.com/forms/d/e/1FAIpQLScEziMdrL9bmYf7A4YyzxbIJx3e5OyYFYFwNTc0ImZ7nzhK5g/viewform?embedded=true">Memuat…</iframe>
 
 <script>
-    // Pengaturan Durasi: 30 menit
+    const display = document.querySelector('#time');
+    const overlay = document.querySelector('#overlay');
+    const formFrame = document.querySelector('#googleForm');
+    const statusTitle = document.querySelector('#status-title');
+    const statusMsg = document.querySelector('#status-message');
+
+    // --- 1. LOGIKA ANTI-REFRESH ---
+    if (sessionStorage.getItem('exam_started')) {
+        // Jika terdeteksi refresh, blokir akses
+        formFrame.remove();
+        overlay.style.display = 'block';
+        statusTitle.textContent = "AKSES DIBLOKIR!";
+        statusMsg.innerHTML = "Anda terdeteksi melakukan refresh atau memuat ulang halaman.<br>Sesuai peraturan, hal ini tidak diperbolehkan.";
+    } else {
+        // Tandai bahwa ujian sudah dimulai
+        sessionStorage.setItem('exam_started', 'true');
+    }
+
+    // --- 2. LOGIKA TIMER 30 MENIT ---
     var duration = 30 * 60; 
-    var display = document.querySelector('#time');
-    var overlay = document.querySelector('#overlay');
-    var formFrame = document.querySelector('#googleForm');
-    
     var countdown = setInterval(function () {
         var minutes = parseInt(duration / 60, 10);
         var seconds = parseInt(duration % 60, 10);
@@ -52,13 +68,17 @@
 
         display.textContent = minutes + ":" + seconds;
 
-        // Jika waktu habis
         if (--duration < 0) {
             clearInterval(countdown);
-            overlay.style.display = 'block'; // Munculkan layar penutup
-            formFrame.remove(); // Hapus form agar tidak bisa diisi lagi
+            formFrame.remove();
+            overlay.style.display = 'block';
         }
     }, 1000);
+
+    // --- 3. KONFIRMASI SAAT INGIN MENINGGALKAN HALAMAN ---
+    window.onbeforeunload = function() {
+        return "Apakah Anda yakin ingin keluar? Jawaban yang belum dikirim akan hilang!";
+    };
 </script>
 
 </body>
